@@ -47,11 +47,6 @@ Demonstrates workflow orchestration with validation, planning, and assignment ca
 
 ### 1. Clone the Repository
 
-```bash
-git clone <your-repo-url>
-cd mcp-workflow-orchestrator
-```
-
 ### 2. Create Virtual Environment
 
 ```bash
@@ -75,40 +70,36 @@ pip install -r requirements.txt
 - `pytest>=7.4.0` - Testing framework
 
 ### 4. Set Up API Key
-# Get your key from: https://console.anthropic.com/settings/keys
-```
-
+Get your key from: https://console.anthropic.com/settings/keys
 Your `.env` file should look like:
 ```
 ANTHROPIC_API_KEY=sk-ant-...your-key-here
 ```
 
 ---
-
 ## Usage
 
-### Process All Requests (Default)
+### Run the Agent (Default)
 ```bash
 python run_agent.py
 ```
 
-This processes all 3 requests in `data/request.json`:
+This uses default data files from `data/` directory and processes all 3 requests:
 - `req-001` - ArcadiaXR (valid preset)
 - `req-002` - TitanMfg (invalid preset - missing 'a' channel)
 - `req-003` - BlueNova (valid preset)
 
-### Process Specific Requests
+### Custom Data Files
 
 ```bash
-# Process just one request
-python run_agent.py --request-ids req-001
-
-# Process multiple specific requests
-python run_agent.py --request-ids req-001 req-003
-
-# Process the failing case
-python run_agent.py --request-ids req-002
+python run_agent.py --requests data/request.json --artists data/artists.json --presets data/presets.json --rules data/rules.json
 ```
+
+**Arguments:**
+- `--requests` - Path to requests JSON file (default: data/request.json)
+- `--artists` - Path to artists JSON file (default: data/artists.json)
+- `--presets` - Path to presets JSON file (default: data/presets.json)
+- `--rules` - Path to rules JSON file (default: data/rules.json)
 
 ### Output
 
@@ -141,15 +132,17 @@ The agent writes results to `decisions.json`:
 
 ### Logs
 
-Server logs are written to stderr (visible in terminal):
+Server logs are written to `mcp.log` file and stderr:
 
 ```json
 {"timestamp": "2025-11-18T12:00:00", "event": "server.starting", "tools": 4, "resources": 4}
 {"timestamp": "2025-11-18T12:00:01", "event": "tool.called", "tool": "validate_preset", "request_id": "req-001"}
 {"timestamp": "2025-11-18T12:00:01", "event": "validation.passed", "request_id": "req-001"}
-{"timestamp": "2025-11-18T12:00:01", "event": "tool.completed", "tool": "validate_preset", "ok": true}
+{"timestamp": "2025-11-18T12:00:01", "event": "tool.completed", "tool": "validate_preset", "ok": true, "duration_ms": 12.5}
 {"timestamp": "2025-11-18T12:00:02", "event": "decision.recorded", "decision_id": "dec-req-001-..."}
 ```
+
+Logs include durations (in milliseconds) for all tool calls.
 
 ---
 
@@ -157,7 +150,7 @@ Server logs are written to stderr (visible in terminal):
 
 ### `validate_preset(request_id, account_id)`
 
-Validates that an account's preset has all required texture packing channels (r, g, b, a).
+Validates that an account's preset has naming configuration and all required 4-channel texture packing (r, g, b, a).
 
 **Example:**
 ```python
@@ -231,11 +224,13 @@ mcp-workflow-orchestrator/
 │   └── rules.json             # 4 workflow rules
 ├── server.py                  # MCP server (4 tools, 4 resources)
 ├── run_agent.py               # Agent with ReAct loop
+├── test_server.py             # Test suite (9 tests)
 ├── requirements.txt           # Python dependencies
 ├── .env.example               # Environment template
 ├── .env                       # Your API key (git-ignored)
 ├── .gitignore                 # Ignore venv, .env, etc.
-├── decisions.json             # Output (generated)
+├── decisions.json             # Output (generated, git-ignored)
+├── mcp.log                    # Server logs (generated, git-ignored)
 └── README.md                  # This file
 ```
 
@@ -268,33 +263,33 @@ Iteration 6: Claude generates natural language rationale → done
 
 ## Testing
 
-### Test the MCP Server Directly
+### Run the Test Suite
 
-You can test individual tools using the MCP inspector or by importing:
+```bash
+# Using pytest
+pytest test_server.py -v
 
-```python
-from server import validate_preset, plan_steps
-
-# Test validation
-result = validate_preset("req-001", "ArcadiaXR")
-assert result["ok"] == True
-
-result = validate_preset("req-002", "TitanMfg")
-assert result["ok"] == False
-assert "Missing required texture channel: 'a'" in result["errors"][0]
+# Or run directly
+python test_server.py
 ```
 
-### Run the Full Workflow
+**Tests included:**
+- ✅ Valid preset validation (ArcadiaXR)
+- ✅ Invalid preset validation (TitanMfg - missing 'a' channel)
+- ✅ Workflow rules matching
+- ✅ Capacity-aware artist assignment
+- ✅ Decision ID idempotency
+- ✅ Priority queue handling
+
+### Run the Full Agent Workflow
 
 ```bash
 # Test with all requests
 python run_agent.py
 
-# Check the output
+# Check the outputs
 cat decisions.json
-
-# Test validation failure case
-python run_agent.py --request-ids req-002
+cat mcp.log
 ```
 
 ### Expected Behavior

@@ -11,6 +11,7 @@ mcp = FastMCP("workflow-orchestrator")
 # Data directory
 DATA_DIR = Path(__file__).parent / "data"
 DECISIONS_FILE = Path(__file__).parent / "decisions.json"
+LOG_FILE = Path(__file__).parent / "mcp.log"
 
 
 # ============================================================================
@@ -24,9 +25,16 @@ def load_json(filename: str) -> Any:
 
 
 def log_event(event: str, **kwargs):
-    """Log structured events to stderr (stdout is reserved for MCP protocol)."""
+    """Log structured events to stderr and mcp.log file."""
     log_entry = {"timestamp": datetime.now().isoformat(), "event": event, **kwargs}
-    print(json.dumps(log_entry), file=sys.stderr)
+    log_line = json.dumps(log_entry)
+
+    # Write to stderr for real-time monitoring
+    print(log_line, file=sys.stderr)
+
+    # Append to mcp.log file
+    with open(LOG_FILE, "a") as f:
+        f.write(log_line + "\n")
 
 
 # Load data at startup (cache in memory)
@@ -59,6 +67,7 @@ def validate_preset(request_id: str, account_id: str) -> dict:
             "errors": list of error messages (empty if ok=true)
         }
     """
+    start_time = datetime.now()
     log_event("tool.called", tool="validate_preset", request_id=request_id, account_id=account_id)
 
     # Check if preset exists
@@ -71,19 +80,27 @@ def validate_preset(request_id: str, account_id: str) -> dict:
         return result
 
     preset = presets_data[account_id]
-    packing = preset.get("packing", {})
+    errors = []
 
-    # Check for required channels
+    # Check naming pattern exists
+    if "naming" not in preset:
+        errors.append("Missing naming pattern configuration")
+
+    # Check for required 4-channel texture packing
+    packing = preset.get("packing", {})
     required_channels = {"r", "g", "b", "a"}
     actual_channels = set(packing.keys())
     missing_channels = required_channels - actual_channels
 
     if missing_channels:
+        errors.extend([f"Missing required texture channel: '{ch}'" for ch in sorted(missing_channels)])
+
+    if errors:
         result = {
             "ok": False,
-            "errors": [f"Missing required texture channel: '{ch}'" for ch in sorted(missing_channels)]
+            "errors": errors
         }
-        log_event("validation.failed", request_id=request_id, missing_channels=list(missing_channels))
+        log_event("validation.failed", request_id=request_id, errors=errors)
     else:
         result = {
             "ok": True,
@@ -91,7 +108,8 @@ def validate_preset(request_id: str, account_id: str) -> dict:
         }
         log_event("validation.passed", request_id=request_id)
 
-    log_event("tool.completed", tool="validate_preset", request_id=request_id, ok=result["ok"])
+    duration_ms = (datetime.now() - start_time).total_seconds() * 1000
+    log_event("tool.completed", tool="validate_preset", request_id=request_id, ok=result["ok"], duration_ms=duration_ms)
     return result
 
 
@@ -109,6 +127,7 @@ def plan_steps(request_id: str) -> dict:
             "matched_rules": list of {rule_index, conditions, actions}
         }
     """
+    start_time = datetime.now()
     log_event("tool.called", tool="plan_steps", request_id=request_id)
 
     if request_id not in requests_by_id:
@@ -148,7 +167,8 @@ def plan_steps(request_id: str) -> dict:
         "matched_rules": matched_rules
     }
 
-    log_event("tool.completed", tool="plan_steps", request_id=request_id, steps_count=len(steps))
+    duration_ms = (datetime.now() - start_time).total_seconds() * 1000
+    log_event("tool.completed", tool="plan_steps", request_id=request_id, steps_count=len(steps), duration_ms=duration_ms)
     return result
 
 
@@ -168,6 +188,7 @@ def assign_artist(request_id: str) -> dict:
             "reason": explanation of assignment decision
         }
     """
+    start_time = datetime.now()
     log_event("tool.called", tool="assign_artist", request_id=request_id)
 
     if request_id not in requests_by_id:
@@ -231,7 +252,8 @@ def assign_artist(request_id: str) -> dict:
         "reason": f"{best_artist['name']} has required skills {required_skills} and capacity ({best_artist['load']}/{best_artist['capacity']})"
     }
 
-    log_event("tool.completed", tool="assign_artist", request_id=request_id, assigned=True, artist_id=best_artist["id"])
+    duration_ms = (datetime.now() - start_time).total_seconds() * 1000
+    log_event("tool.completed", tool="assign_artist", request_id=request_id, assigned=True, artist_id=best_artist["id"], duration_ms=duration_ms)
     return result
 
 
@@ -251,6 +273,7 @@ def record_decision(request_id: str, decision_data: dict) -> dict:
             "success": bool
         }
     """
+    start_time = datetime.now()
     log_event("tool.called", tool="record_decision", request_id=request_id)
 
     # Create decision record
@@ -284,8 +307,9 @@ def record_decision(request_id: str, decision_data: dict) -> dict:
         "success": True
     }
 
+    duration_ms = (datetime.now() - start_time).total_seconds() * 1000
     log_event("decision.recorded", decision_id=decision["decision_id"], request_id=request_id)
-    log_event("tool.completed", tool="record_decision", request_id=request_id, decision_id=decision["decision_id"])
+    log_event("tool.completed", tool="record_decision", request_id=request_id, decision_id=decision["decision_id"], duration_ms=duration_ms)
 
     return result
 

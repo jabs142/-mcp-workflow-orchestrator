@@ -204,7 +204,7 @@ Be thorough in your rationale - explain WHY each decision was made based on the 
                 print("\n⚠️  Validation failed - asking agent to generate customer error message")
                 messages.append({
                     "role": "user",
-                    "content": f"Validation failed with errors: {validation_errors}. Stop the workflow here and generate a customer-safe error message explaining what's wrong and how to fix it. Do not proceed with plan_steps, assign_artist, or record_decision."
+                    "content": f"Validation failed with errors: {validation_errors}. Stop the workflow here and generate a customer-safe error message explaining what's wrong, AND include a clarifying question to help resolve the issue (e.g., 'Should we default to emissive for the missing channel or block this batch?'). Do not proceed with plan_steps, assign_artist, or record_decision."
                 })
 
         elif response.stop_reason == "end_turn":
@@ -319,16 +319,36 @@ def main():
     )
 
     parser.add_argument(
-        "--request-ids",
-        nargs="+",
-        help="Request IDs to process (e.g., req-001 req-002)",
-        default=["req-001", "req-002", "req-003"]
+        "--requests",
+        default="data/request.json",
+        help="Path to requests JSON file (default: data/request.json)"
+    )
+    parser.add_argument(
+        "--artists",
+        default="data/artists.json",
+        help="Path to artists JSON file (default: data/artists.json)"
+    )
+    parser.add_argument(
+        "--presets",
+        default="data/presets.json",
+        help="Path to presets JSON file (default: data/presets.json)"
+    )
+    parser.add_argument(
+        "--rules",
+        default="data/rules.json",
+        help="Path to rules JSON file (default: data/rules.json)"
     )
 
     args = parser.parse_args()
 
+    # Load requests file to get all request IDs
+    with open(args.requests, "r") as f:
+        requests = json.load(f)
+
+    request_ids = [req["id"] for req in requests]
+
     # Run the async agent
-    asyncio.run(run_agent(args.request_ids))
+    asyncio.run(run_agent(request_ids))
 
 
 if __name__ == "__main__":
