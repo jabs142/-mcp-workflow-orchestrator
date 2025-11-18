@@ -68,6 +68,26 @@ def validate_preset(request_id: str, account_id: str) -> dict:
         }
     """
     start_time = datetime.now()
+
+    # If account_id not provided, look it up from request
+    if not account_id or account_id == "":
+        if request_id in requests_by_id:
+            account_id = requests_by_id[request_id].get("account")
+            if not account_id:
+                result = {
+                    "ok": False,
+                    "errors": [f"Request '{request_id}' has no account field"]
+                }
+                log_event("validation.failed", request_id=request_id, reason="no_account_in_request")
+                return result
+        else:
+            result = {
+                "ok": False,
+                "errors": [f"Request '{request_id}' not found"]
+            }
+            log_event("validation.failed", request_id=request_id, reason="request_not_found")
+            return result
+
     log_event("tool.called", tool="validate_preset", request_id=request_id, account_id=account_id)
 
     # Check if preset exists

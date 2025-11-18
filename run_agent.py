@@ -83,27 +83,25 @@ async def process_request(
     ]
 
     # Initial prompt for the agent
-    initial_prompt = f"""You are a workflow orchestration agent. Process request "{request_id}" by following these steps in order:
+    initial_prompt = f"""You are a workflow orchestration agent. Process request "{request_id}" by calling tools in this sequence:
 
-1. First, read the resources to understand context:
-   - resource://requests (to get request details)
-   - resource://presets (to check preset configuration)
-   - resource://artists (to see available artists)
-   - resource://rules (to understand workflow rules)
+1. validate_preset(request_id="{request_id}", account_id="")
+   - Leave account_id as empty string "" - the tool will look it up from the request
+   - Check if the preset has all 4 texture channels (r, g, b, a) and naming configuration
+   - If validation FAILS: Stop here and return a customer-safe error message with a clarifying question
 
-2. Then call the tools in this sequence:
-   - validate_preset: Check if the account's preset is valid (has all 4 texture channels: r, g, b, a)
-   - If validation FAILS: Stop here and return a customer-safe error message explaining what's missing
-   - plan_steps: Determine workflow steps based on rules
-   - assign_artist: Assign an artist based on skills and capacity
-   - record_decision: Save the decision with all details
+2. If validation passes, continue with:
+   - plan_steps(request_id="{request_id}"): Determine workflow steps based on rules
+   - assign_artist(request_id="{request_id}"): Assign an artist based on skills and capacity
+   - record_decision(request_id="{request_id}", decision_data={{...}}): Save the decision
 
-3. After completing all steps, provide a summary with:
-   - The decision that was made
-   - A natural-language rationale explaining why these choices were made
-   - Reference to the tool calls that were executed
+3. After completing all steps, provide a natural-language rationale explaining:
+   - What was validated
+   - Which workflow steps were planned and why
+   - Which artist was assigned and why (or why none could be assigned)
+   - Reference the specific tools you called
 
-Be thorough in your rationale - explain WHY each decision was made based on the data you observed."""
+Be thorough in your rationale - explain WHY each decision was made based on the tool results."""
 
     messages = [{"role": "user", "content": initial_prompt}]
 
