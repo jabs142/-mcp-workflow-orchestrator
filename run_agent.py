@@ -22,6 +22,7 @@ from pathlib import Path
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 from mcp.types import TextContent, Tool
 
 # Load environment variables from .env file
@@ -36,7 +37,7 @@ load_dotenv()
 MODEL = "claude-3-5-sonnet-20241022"
 
 # MCP server command
-SERVER_COMMAND = "python"
+SERVER_COMMAND = "python3"
 SERVER_ARGS = ["server.py"]
 
 
@@ -269,31 +270,32 @@ async def run_agent(request_ids: list[str]):
 
     decisions = []
 
-    async with ClientSession(server_params) as session:
-        # Initialize the session
-        await session.initialize()
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            # Initialize the session
+            await session.initialize()
 
-        print("✅ Connected to MCP server")
+            print("✅ Connected to MCP server")
 
-        # List available tools and resources
-        tools = await session.list_tools()
-        resources = await session.list_resources()
+            # List available tools and resources
+            tools = await session.list_tools()
+            resources = await session.list_resources()
 
-        print(f"\n📦 Available tools: {[tool.name for tool in tools.tools]}")
-        print(f"📚 Available resources: {[resource.uri for resource in resources.resources]}")
+            print(f"\n📦 Available tools: {[tool.name for tool in tools.tools]}")
+            print(f"📚 Available resources: {[resource.uri for resource in resources.resources]}")
 
-        # Process each request
-        for request_id in request_ids:
-            try:
-                result = await process_request(request_id, session, anthropic_client)
-                decisions.append(result)
-            except Exception as e:
-                print(f"\n❌ Error processing {request_id}: {e}")
-                decisions.append({
-                    "request_id": request_id,
-                    "error": str(e),
-                    "completed_at": datetime.utcnow().isoformat()
-                })
+            # Process each request
+            for request_id in request_ids:
+                try:
+                    result = await process_request(request_id, session, anthropic_client)
+                    decisions.append(result)
+                except Exception as e:
+                    print(f"\n❌ Error processing {request_id}: {e}")
+                    decisions.append({
+                        "request_id": request_id,
+                        "error": str(e),
+                        "completed_at": datetime.utcnow().isoformat()
+                    })
 
     # Write decisions to file
     output_file = Path(__file__).parent / "decisions.json"
