@@ -14,10 +14,6 @@ DECISIONS_FILE = Path(__file__).parent / "decisions.json"
 LOG_FILE = Path(__file__).parent / "mcp.log"
 
 
-# ============================================================================
-# DATA LOADING
-# ============================================================================
-
 def load_json(filename: str) -> Any:
     """Load JSON data from the data directory."""
     with open(DATA_DIR / filename, "r") as f:
@@ -48,45 +44,29 @@ requests_by_id = {req["id"]: req for req in requests_data}
 artists_by_id = {artist["id"]: artist for artist in artists_data}
 
 
-# ============================================================================
-# TOOLS
-# ============================================================================
-
 @mcp.tool()
-def validate_preset(request_id: str, account_id: str) -> dict:
-    """
-    Validates that a preset has all required 4-channel texture packing (r, g, b, a).
-
-    Args:
-        request_id: The request ID being validated
-        account_id: The account/customer ID to check preset for
-
-    Returns:
-        {
-            "ok": bool,
-            "errors": list of error messages (empty if ok=true)
-        }
-    """
+def validate_preset(request_id: str) -> dict:
+    """Validates preset has naming config and 4-channel texture packing (r,g,b,a).
+    Account ID is auto-derived from request."""
     start_time = datetime.now()
 
-    # If account_id not provided, look it up from request
-    if not account_id or account_id == "":
-        if request_id in requests_by_id:
-            account_id = requests_by_id[request_id].get("account")
-            if not account_id:
-                result = {
-                    "ok": False,
-                    "errors": [f"Request '{request_id}' has no account field"]
-                }
-                log_event("validation.failed", request_id=request_id, reason="no_account_in_request")
-                return result
-        else:
-            result = {
-                "ok": False,
-                "errors": [f"Request '{request_id}' not found"]
-            }
-            log_event("validation.failed", request_id=request_id, reason="request_not_found")
-            return result
+    # Look up account_id from request
+    if request_id not in requests_by_id:
+        result = {
+            "ok": False,
+            "errors": [f"Request '{request_id}' not found"]
+        }
+        log_event("validation.failed", request_id=request_id, reason="request_not_found")
+        return result
+
+    account_id = requests_by_id[request_id].get("account")
+    if not account_id:
+        result = {
+            "ok": False,
+            "errors": [f"Request '{request_id}' has no account field"]
+        }
+        log_event("validation.failed", request_id=request_id, reason="no_account_in_request")
+        return result
 
     log_event("tool.called", tool="validate_preset", request_id=request_id, account_id=account_id)
 
@@ -135,18 +115,7 @@ def validate_preset(request_id: str, account_id: str) -> dict:
 
 @mcp.tool()
 def plan_steps(request_id: str) -> dict:
-    """
-    Plans workflow steps by matching request attributes against rules.
-
-    Args:
-        request_id: The request ID to plan steps for
-
-    Returns:
-        {
-            "steps": list of workflow step names,
-            "matched_rules": list of {rule_index, conditions, actions}
-        }
-    """
+    """Plans workflow steps by matching request attributes against rules."""
     start_time = datetime.now()
     log_event("tool.called", tool="plan_steps", request_id=request_id)
 
@@ -194,20 +163,7 @@ def plan_steps(request_id: str) -> dict:
 
 @mcp.tool()
 def assign_artist(request_id: str) -> dict:
-    """
-    Assigns an artist based on required skills and available capacity.
-    Prioritizes skill match, then selects artist with lowest current load.
-
-    Args:
-        request_id: The request ID to assign an artist for
-
-    Returns:
-        {
-            "artist_id": str or null,
-            "artist_name": str or null,
-            "reason": explanation of assignment decision
-        }
-    """
+    """Assigns artist based on required skills and capacity. Selects artist with lowest load."""
     start_time = datetime.now()
     log_event("tool.called", tool="assign_artist", request_id=request_id)
 
@@ -279,20 +235,7 @@ def assign_artist(request_id: str) -> dict:
 
 @mcp.tool()
 def record_decision(request_id: str, decision_data: dict) -> dict:
-    """
-    Records a decision to the decisions.json file with audit trail.
-
-    Args:
-        request_id: The request ID this decision is for
-        decision_data: Dictionary containing decision details (steps, artist, etc.)
-
-    Returns:
-        {
-            "decision_id": unique ID for this decision,
-            "recorded_at": ISO timestamp,
-            "success": bool
-        }
-    """
+    """Records decision to decisions.json with audit trail."""
     start_time = datetime.now()
     log_event("tool.called", tool="record_decision", request_id=request_id)
 
@@ -334,10 +277,6 @@ def record_decision(request_id: str, decision_data: dict) -> dict:
     return result
 
 
-# ============================================================================
-# RESOURCES
-# ============================================================================
-
 @mcp.resource("resource://requests")
 def get_requests() -> str:
     """Returns all workflow requests."""
@@ -361,10 +300,6 @@ def get_rules() -> str:
     """Returns all workflow rules for conditional step planning."""
     return json.dumps(rules_data, indent=2)
 
-
-# ============================================================================
-# SERVER ENTRY POINT
-# ============================================================================
 
 if __name__ == "__main__":
     log_event("server.starting", tools=4, resources=4)

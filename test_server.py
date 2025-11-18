@@ -2,13 +2,9 @@ import pytest
 from server import validate_preset, plan_steps, assign_artist, record_decision
 
 
-# ============================================================================
-# VALIDATION TESTS
-# ============================================================================
-
 def test_validate_preset_success():
     """Test that ArcadiaXR preset passes validation (has naming and all 4 channels)"""
-    result = validate_preset("req-001", "ArcadiaXR")
+    result = validate_preset("req-001")
 
     assert result["ok"] is True
     assert result["errors"] == []
@@ -16,7 +12,7 @@ def test_validate_preset_success():
 
 def test_validate_preset_missing_channel():
     """Test that TitanMfg preset fails validation (missing 'a' channel)"""
-    result = validate_preset("req-002", "TitanMfg")
+    result = validate_preset("req-002")
 
     assert result["ok"] is False
     assert len(result["errors"]) > 0
@@ -24,16 +20,12 @@ def test_validate_preset_missing_channel():
 
 
 def test_validate_preset_not_found():
-    """Test validation fails for non-existent account"""
-    result = validate_preset("req-999", "NonExistentAccount")
+    """Test validation fails for non-existent request"""
+    result = validate_preset("req-999")
 
     assert result["ok"] is False
-    assert any("No preset found" in error for error in result["errors"])
+    assert any("not found" in error for error in result["errors"])
 
-
-# ============================================================================
-# WORKFLOW PLANNING TESTS
-# ============================================================================
 
 def test_plan_steps_matches_rules():
     """Test that workflow rules are matched correctly for ArcadiaXR"""
@@ -53,10 +45,6 @@ def test_plan_steps_priority_rule():
     matched_rules = result["matched_rules"]
     assert any(rule["actions"].get("queue") == "expedite" for rule in matched_rules)
 
-
-# ============================================================================
-# ARTIST ASSIGNMENT TESTS
-# ============================================================================
 
 def test_assign_artist_with_capacity():
     """Test that artist is assigned when they have capacity and matching skills"""
@@ -78,10 +66,6 @@ def test_assign_artist_no_capacity():
     assert result["artist_name"] is None
     assert "No artists available" in result["reason"]
 
-
-# ============================================================================
-# DECISION RECORDING TESTS
-# ============================================================================
 
 def test_record_decision_creates_id():
     """Test that record_decision generates a unique decision ID"""
@@ -112,41 +96,3 @@ def test_record_decision_idempotency():
     # Both should succeed
     assert result1["success"] is True
     assert result2["success"] is True
-
-
-# ============================================================================
-# RUN TESTS
-# ============================================================================
-
-if __name__ == "__main__":
-    # Run tests without pytest (useful for quick checks)
-    print("Running tests...")
-
-    test_validate_preset_success()
-    print("✓ test_validate_preset_success")
-
-    test_validate_preset_missing_channel()
-    print("✓ test_validate_preset_missing_channel")
-
-    test_validate_preset_not_found()
-    print("✓ test_validate_preset_not_found")
-
-    test_plan_steps_matches_rules()
-    print("✓ test_plan_steps_matches_rules")
-
-    test_plan_steps_priority_rule()
-    print("✓ test_plan_steps_priority_rule")
-
-    test_assign_artist_with_capacity()
-    print("✓ test_assign_artist_with_capacity")
-
-    test_assign_artist_no_capacity()
-    print("✓ test_assign_artist_no_capacity")
-
-    test_record_decision_creates_id()
-    print("✓ test_record_decision_creates_id")
-
-    test_record_decision_idempotency()
-    print("✓ test_record_decision_idempotency")
-
-    print("\nAll tests passed!")

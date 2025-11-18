@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
-"""
-Workflow Agent - Orchestrates request processing using MCP tools.
-
-The agent connects to the MCP server and uses Claude to:
-1. Validate presets (validate_preset)
-2. Plan workflow steps (plan_steps)
-3. Assign artists (assign_artist)
-4. Record decisions (record_decision)
-
-Outputs decisions.json with rationale and tool call trace.
-"""
+"""Workflow agent - orchestrates request processing using MCP tools."""
 
 import argparse
 import asyncio
@@ -28,22 +18,13 @@ from mcp.types import TextContent, Tool
 # Load environment variables from .env file
 load_dotenv()
 
-
-# ============================================================================
-# AGENT CONFIGURATION
-# ============================================================================
-
 # Claude model to use for reasoning
-MODEL = "claude-sonnet-4-20250514"  # Claude Sonnet 4
+MODEL = "claude-sonnet-4-20250514"
 
 # MCP server command
 SERVER_COMMAND = "python3"
 SERVER_ARGS = ["server.py"]
 
-
-# ============================================================================
-# AGENT CORE
-# ============================================================================
 
 async def process_request(
     request_id: str,
@@ -85,9 +66,9 @@ async def process_request(
     # Initial prompt for the agent
     initial_prompt = f"""You are a workflow orchestration agent. Process request "{request_id}" by calling tools in this sequence:
 
-1. validate_preset(request_id="{request_id}", account_id="")
-   - Leave account_id as empty string "" - the tool will look it up from the request
+1. validate_preset(request_id="{request_id}")
    - Check if the preset has all 4 texture channels (r, g, b, a) and naming configuration
+   - The tool automatically looks up the account from the request
    - If validation FAILS: Stop here and return a customer-safe error message with a clarifying question
 
 2. If validation passes, continue with:
@@ -305,10 +286,6 @@ async def run_agent(request_ids: list[str]):
     print(f"📄 Decisions written to: {output_file}")
     print(f"{'='*60}")
 
-
-# ============================================================================
-# CLI
-# ============================================================================
 
 def main():
     """Command-line interface for the agent."""
