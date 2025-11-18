@@ -60,8 +60,6 @@ python3 -m venv venv
 
 # Activate it
 source venv/bin/activate
-
-# You should see (venv) in your terminal prompt
 ```
 
 ### 3. Install Dependencies
@@ -77,12 +75,6 @@ pip install -r requirements.txt
 - `pytest>=7.4.0` - Testing framework
 
 ### 4. Set Up API Key
-
-```bash
-# Copy the example environment file
-cp .env.example .env
-
-# Edit .env and add your Anthropic API key
 # Get your key from: https://console.anthropic.com/settings/keys
 ```
 
@@ -96,7 +88,6 @@ ANTHROPIC_API_KEY=sk-ant-...your-key-here
 ## Usage
 
 ### Process All Requests (Default)
-
 ```bash
 python run_agent.py
 ```

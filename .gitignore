@@ -1,40 +1,39 @@
-  # Python
-  __pycache__/
-  *.py[cod]
-  *$py.class
-  *.so
-  .Python
-  env/
-  venv/
-  ENV/
-  build/
-  dist/
-  *.egg-info/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
 
-  # Virtual environments
-  .venv/
-  venv/
+# Virtual environments
+env/
+venv/
+.venv/
+ENV/
 
-  # IDE
-  .vscode/
-  .idea/
-  *.swp
-  *.swo
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-  # Generated outputs
-  decisions.json
-  mcp.log
+# Generated outputs
+decisions.json
+mcp.log
 
-  # OS
-  .DS_Store
-  Thumbs.db
+# OS
+.DS_Store
+Thumbs.db
 
-  # Secrets
-  .env
-  *.key
-  credentials.json
+# Secrets
+.env
+*.key
+credentials.json
 
-  # Test coverage
-  .coverage
-  htmlcov/
-  .pytest_cache/
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/

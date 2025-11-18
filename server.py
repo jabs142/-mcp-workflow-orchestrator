@@ -25,7 +25,7 @@ def load_json(filename: str) -> Any:
 
 def log_event(event: str, **kwargs):
     """Log structured events to stderr (stdout is reserved for MCP protocol)."""
-    log_entry = {"timestamp": datetime.utcnow().isoformat(), "event": event, **kwargs}
+    log_entry = {"timestamp": datetime.now().isoformat(), "event": event, **kwargs}
     print(json.dumps(log_entry), file=sys.stderr)
 
 
@@ -255,9 +255,9 @@ def record_decision(request_id: str, decision_data: dict) -> dict:
 
     # Create decision record
     decision = {
-        "decision_id": f"dec-{request_id}-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+        "decision_id": f"dec-{request_id}-{datetime.now().strftime('%Y%m%d%H%M%S')}",
         "request_id": request_id,
-        "recorded_at": datetime.utcnow().isoformat(),
+        "recorded_at": datetime.now().isoformat(),
         **decision_data
     }
 

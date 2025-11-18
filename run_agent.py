@@ -34,7 +34,7 @@ load_dotenv()
 # ============================================================================
 
 # Claude model to use for reasoning
-MODEL = "claude-3-5-sonnet-20241022"
+MODEL = "claude-sonnet-4-20250514"  # Claude Sonnet 4
 
 # MCP server command
 SERVER_COMMAND = "python3"
@@ -147,7 +147,7 @@ Be thorough in your rationale - explain WHY each decision was made based on the 
                     tool_trace.append({
                         "tool": tool_name,
                         "input": tool_input,
-                        "timestamp": datetime.utcnow().isoformat()
+                        "timestamp": datetime.now().isoformat()
                     })
 
                     # Execute the tool via MCP
@@ -222,7 +222,7 @@ Be thorough in your rationale - explain WHY each decision was made based on the 
                 "validation_passed": not validation_failed,
                 "rationale": final_text,
                 "trace": tool_trace,
-                "completed_at": datetime.utcnow().isoformat()
+                "completed_at": datetime.now().isoformat()
             }
 
         else:
@@ -235,7 +235,7 @@ Be thorough in your rationale - explain WHY each decision was made based on the 
         "validation_passed": False,
         "rationale": "Agent exceeded maximum iteration limit",
         "trace": tool_trace,
-        "completed_at": datetime.utcnow().isoformat(),
+        "completed_at": datetime.now().isoformat(),
         "error": "max_iterations_exceeded"
     }
 
@@ -294,7 +294,7 @@ async def run_agent(request_ids: list[str]):
                     decisions.append({
                         "request_id": request_id,
                         "error": str(e),
-                        "completed_at": datetime.utcnow().isoformat()
+                        "completed_at": datetime.now().isoformat()
                     })
 
     # Write decisions to file
