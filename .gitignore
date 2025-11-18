@@ -1,0 +1,40 @@
+  # Python
+  __pycache__/
+  *.py[cod]
+  *$py.class
+  *.so
+  .Python
+  env/
+  venv/
+  ENV/
+  build/
+  dist/
+  *.egg-info/
+
+  # Virtual environments
+  .venv/
+  venv/
+
+  # IDE
+  .vscode/
+  .idea/
+  *.swp
+  *.swo
+
+  # Generated outputs
+  decisions.json
+  mcp.log
+
+  # OS
+  .DS_Store
+  Thumbs.db
+
+  # Secrets
+  .env
+  *.key
+  credentials.json
+
+  # Test coverage
+  .coverage
+  htmlcov/
+  .pytest_cache/
